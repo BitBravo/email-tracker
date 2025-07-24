@@ -1,11 +1,11 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
-const { Sequelize, DataTypes } = require("sequelize");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const path = require("path");
+const mongoose = require("mongoose");
 
 const app = express();
 const server = http.createServer(app);
@@ -13,15 +13,25 @@ const wss = new WebSocket.Server({ server });
 
 const port = process.env.PORT || 3000;
 
-const sequelize = new Sequelize(process.env.DB_URL, {
-  dialect: "postgres",
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+mongoose
+  .connect("mongodb://localhost:27017/emails", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    ssl: true,
+  })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log("Error connecting to MongoDB:", err));
+
+// Create the email log schema and model
+const emailLogSchema = new mongoose.Schema({
+  email_id: { type: String, required: true },
+  email: { type: String, required: true },
+  people: { type: String, required: true },
+  opened_at: { type: Date, default: null },
+  sent_at: { type: Date, required: true },
 });
+
+const EmailLog = mongoose.model("EmailLog", emailLogSchema);
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -46,9 +56,9 @@ app.get("/track/:email_id", async (req, res) => {
   const { email_id } = req.params;
 
   // Update the email status to "Opened"
-  await EmailLog.update(
-    { status: "Opened", opened_at: new Date() },
-    { where: { email_id } }
+  await EmailLog.updateOne(
+    { email_id },
+    { status: "Opened", opened_at: new Date() }
   );
 
   // Notify all connected clients about the email status change
@@ -72,31 +82,31 @@ app.get("/track/:email_id", async (req, res) => {
 app.get("/emails", async (req, res) => {
   const { people, days } = req.query;
 
-  const whereClause = {};
-  if (people && people !== "All") whereClause.people = people;
+  const filter = {};
+  if (people && people !== "All") filter.people = people;
 
   if (days) {
     const dateFilter = new Date();
     dateFilter.setDate(dateFilter.getDate() - parseInt(days));
-    whereClause.sent_at = { [Sequelize.Op.gte]: dateFilter };
+    filter.sent_at = { $gte: dateFilter };
   }
 
-  // Fetch grouped emails by people
-  const emailLogs = await EmailLog.findAll({
-    where: whereClause,
-    group: ["people"],
-    order: [["sent_at", "DESC"]],
-  });
+  try {
+    const emailLogs = await EmailLog.find(filter).sort({ sent_at: -1 });
 
-  // Group the emails by the 'people' field
-  const groupedEmails = emailLogs.reduce((groups, email) => {
-    const group = groups[email.people] || [];
-    group.push(email);
-    groups[email.people] = group;
-    return groups;
-  }, {});
+    // Group the emails by the 'people' field
+    const groupedEmails = emailLogs.reduce((groups, email) => {
+      const group = groups[email.people] || [];
+      group.push(email);
+      groups[email.people] = group;
+      return groups;
+    }, {});
 
-  res.json(groupedEmails);
+    res.json(groupedEmails);
+  } catch (error) {
+    console.error("Error fetching emails:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // POST route to add a new email log
@@ -110,13 +120,15 @@ app.post("/emails", async (req, res) => {
     }
 
     // Create a new email log
-    const newEmailLog = await EmailLog.create({
+    const newEmailLog = new EmailLog({
       email_id,
       email,
       people,
       opened_at: null,
       sent_at: new Date(),
     });
+
+    await newEmailLog.save();
 
     return res.status(201).json(newEmailLog);
   } catch (error) {
@@ -127,6 +139,5 @@ app.post("/emails", async (req, res) => {
 
 // Start server
 server.listen(port, async () => {
-  await sequelize.sync();
-  console.log(`Server is running on http://localhost: ${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
