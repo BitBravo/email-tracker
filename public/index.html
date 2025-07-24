@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Tracker</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Global Styles */
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: #f4f7fc;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+      h1 {
+        text-align: center;
+        font-size: 2.5rem;
+        color: #4c5c68;
+        margin: 20px 0;
+      }
+      .container {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      /* Flexbox for filter controls */
+      .filters {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .filters select,
+      .filters button {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .filters button {
+        background-color: #4c5c68;
+        color: white;
+        transition: background-color 0.3s;
+      }
+      .filters button:hover {
+        background-color: #2f3a45;
+      }
+
+      /* Grouped Email List Styling */
+      .group-title {
+        font-size: 1.4rem;
+        color: #4c5c68;
+        margin-top: 40px;
+        font-weight: 600;
+      }
+
+      /* Card Style for the table */
+      .email-group {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      /* Table Styles */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+      }
+      th {
+        background-color: #f1f1f1;
+        font-weight: 500;
+        color: #4c5c68;
+      }
+      td {
+        background-color: #f9f9f9;
+      }
+      td.status {
+        font-weight: bold;
+        color: #33b1b8;
+      }
+      tr:hover td {
+        background-color: #f1f1f1;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .filters {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .filters select,
+        .filters button {
+          width: 100%;
+          margin-bottom: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Email Tracker</h1>
+
+      <div class="filters">
+        <div>
+          <label for="people">Filter by People:</label>
+          <select id="people">
+            <option value="All">All</option>
+            <option value="People1">People1</option>
+            <option value="People2">People2</option>
+          </select>
+        </div>
+        <div>
+          <label for="days">Filter by Days:</label>
+          <select id="days">
+            <option value="1">Last 1 Day</option>
+            <option value="2">Last 2 Days</option>
+            <option value="3">Last 3 Days</option>
+            <option value="7">Last 7 Days</option>
+          </select>
+        </div>
+        <button onclick="fetchEmails()">Filter</button>
+      </div>
+
+      <div id="emailList"></div>
+    </div>
+
+    <script>
+      const ws = new WebSocket("ws://localhost:3000"); // WebSocket connection
+
+      // When a message is received from the WebSocket server
+      ws.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        const row = document.querySelector(
+          `tr[data-email-id="${data.email_id}"]`
+        );
+        if (row) {
+          const statusCell = row.querySelector(".status");
+          statusCell.textContent = data.status;
+        }
+      };
+
+      async function fetchEmails() {
+        const people = document.getElementById("people").value;
+        const days = document.getElementById("days").value;
+
+        const response = await fetch(`/emails?people=${people}&days=${days}`);
+        const emails = await response.json();
+
+        const emailListContainer = document.getElementById("emailList");
+        emailListContainer.innerHTML = ""; // Clear existing content
+
+        // Loop through each group (e.g., People1, People2)
+        for (const group in emails) {
+          const groupTitle = document.createElement("div");
+          groupTitle.classList.add("group-title");
+          groupTitle.textContent = `Group: ${group}`;
+
+          const emailGroupCard = document.createElement("div");
+          emailGroupCard.classList.add("email-group");
+
+          const table = document.createElement("table");
+          const thead = document.createElement("thead");
+          thead.innerHTML = `
+          <tr>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Sent At</th>
+            <th>Opened At</th>
+          </tr>
+        `;
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          emails[group].forEach((email) => {
+            const row = document.createElement("tr");
+            row.setAttribute("data-email-id", email.email_id);
+            row.innerHTML = `
+            <td>${email.email_id}</td>
+            <td class="status">${email.status}</td>
+            <td>${new Date(email.sent_at).toLocaleString()}</td>
+            <td>${
+              email.opened_at
+                ? new Date(email.opened_at).toLocaleString()
+                : "Not Opened"
+            }</td>
+          `;
+            tbody.appendChild(row);
+          });
+
+          table.appendChild(tbody);
+          emailGroupCard.appendChild(table);
+          emailListContainer.appendChild(groupTitle);
+          emailListContainer.appendChild(emailGroupCard);
+        }
+      }
+
+      // Initial load
+      fetchEmails();
+    </script>
+  </body>
+</html>
