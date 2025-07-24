@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
@@ -10,18 +11,17 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const sequelize = new Sequelize(
-  "postgresql://emails_hqsz_user:1KLfHMRiSr1G9qwVlhQ8yjhvryfplwt2@dpg-d212c0s9c44c7393s9a0-a.oregon-postgres.render.com/emails_hqsz",
-  {
-    dialect: "postgres",
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false,
-      },
+const port = process.env.PORT || 3000;
+
+const sequelize = new Sequelize(process.env.DB_URL, {
+  dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
     },
-  }
-);
+  },
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -126,7 +126,7 @@ app.post("/emails", async (req, res) => {
 });
 
 // Start server
-server.listen(3001, async () => {
+server.listen(port, async () => {
   await sequelize.sync();
-  console.log("Server is running on http://localhost:3000");
+  console.log(`Server is running on http://localhost: ${port}`);
 });
