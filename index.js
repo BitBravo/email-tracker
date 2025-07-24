@@ -14,9 +14,7 @@ const wss = new WebSocket.Server({ server });
 const port = process.env.PORT || 3000;
 
 mongoose
-  .connect("mongodb://localhost:27017/emails", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+  .connect("mongodb://127.0.0.1:27017/emails", {
     ssl: true,
   })
   .then(() => console.log("MongoDB connected"))
