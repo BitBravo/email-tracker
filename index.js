@@ -25,6 +25,7 @@ const emailLogSchema = new mongoose.Schema({
   email: { type: String, required: true },
   people: { type: String, required: true },
   status: { type: String, required: false },
+  senderIp: { type: String, required: false },
   opened_at: { type: Date, default: null },
   sent_at: { type: Date, required: true },
 });
@@ -86,10 +87,16 @@ app.get("/dashboard", requireLogin, (req, res) => {
 // Track email open and notify clients
 app.get("/track/:email_id", async (req, res) => {
   const { email_id } = req.params;
+  let clientIp = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  console.log(
+    "clientIp",
+    req.headers["x-forwarded-for"],
+    req.connection.remoteAddress
+  );
 
   // Update the email status to "Opened"
   await EmailLog.updateOne(
-    { email_id },
+    { email_id, senderIp: { $ne: clientIp } },
     { status: "Opened", opened_at: new Date() }
   );
 
@@ -108,7 +115,7 @@ app.get("/track/:email_id", async (req, res) => {
 });
 
 // Fetch emails with filters (people and date)
-app.get("/emails", async (req, res) => {
+app.get("/emailList", async (req, res) => {
   const { people, days, status } = req.query;
 
   const filter = {};
@@ -147,9 +154,16 @@ app.get("/emails", async (req, res) => {
 });
 
 // POST route to add a new email log
-app.post("/emails", async (req, res) => {
+app.get("/emails", async (req, res) => {
   try {
-    const { email_id, email, people } = req.body;
+    const { email_id, email, people } = req.query;
+    let clientIp =
+      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    console.log(
+      "clientIp",
+      req.headers["x-forwarded-for"],
+      req.connection.remoteAddress
+    );
 
     // Validate required fields
     if (!email_id || !email || !people) {
@@ -161,6 +175,7 @@ app.post("/emails", async (req, res) => {
       email_id,
       email,
       people,
+      senderIp: clientIp,
       status: "Sent",
       opened_at: null,
       sent_at: new Date(),
