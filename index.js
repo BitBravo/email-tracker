@@ -70,21 +70,29 @@ app.get("/track/:email_id", async (req, res) => {
   // Send a transparent 1x1 pixel
   const base64Image =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/5PqAAAAAElFTkSuQmCC";
-  res.setHeader("Content-Type", "image/png"); 
-  res.send(Buffer.from(base64Image, "base64")); 
+  res.setHeader("Content-Type", "image/png");
+  res.send(Buffer.from(base64Image, "base64"));
 });
 
 // Fetch emails with filters (people and date)
 app.get("/emails", async (req, res) => {
-  const { people, days } = req.query;
+  const { people, days, status } = req.query;
 
   const filter = {};
   if (people && people !== "All") filter.people = people;
 
   if (days) {
-    const dateFilter = new Date();
-    dateFilter.setDate(dateFilter.getDate() - parseInt(days));
-    filter.sent_at = { $gte: dateFilter };
+    const now = new Date();
+    const midnightUTC = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+    midnightUTC.setUTCDate(midnightUTC.getUTCDate() - parseInt(days));
+    filter.sent_at = { $gte: midnightUTC };
+  }
+
+  // Filter by status
+  if (status && status !== "All") {
+    filter.status = status;
   }
 
   try {

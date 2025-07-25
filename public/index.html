@@ -132,6 +132,14 @@
             <option value="7">Last 7 Days</option>
           </select>
         </div>
+        <div>
+          <label for="status">Filter by Status:</label>
+          <select id="status">
+            <option value="All">All</option>
+            <option value="Opened">Opened</option>
+            <option value="Sent">Sent</option>
+          </select>
+        </div>
         <button onclick="fetchEmails()">Filter</button>
       </div>
 
@@ -153,11 +161,32 @@
         }
       };
 
+      const formatJST = (utcDateStr) => {
+        if (!utcDateStr) return "Not Opened";
+        const options = {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        };
+
+        const date = new Date(utcDateStr);
+        return new Intl.DateTimeFormat("en-US", options)
+          .format(date)
+          .replace(",", "");
+      };
+
       async function fetchEmails() {
         const people = document.getElementById("people").value;
         const days = document.getElementById("days").value;
+        const status = document.getElementById("status").value;
 
-        const response = await fetch(`/emails?people=${people}&days=${days}`);
+        const response = await fetch(
+          `/emails?people=${people}&days=${days}&status=${status}`
+        );
         const emails = await response.json();
 
         const emailListContainer = document.getElementById("emailList");
@@ -189,14 +218,10 @@
             const row = document.createElement("tr");
             row.setAttribute("data-email-id", email.email_id);
             row.innerHTML = `
-            <td>${email.email_id}</td>
+            <td>${email.email}</td>
             <td class="status">${email.status}</td>
-            <td>${new Date(email.sent_at).toLocaleString()}</td>
-            <td>${
-              email.opened_at
-                ? new Date(email.opened_at).toLocaleString()
-                : "Not Opened"
-            }</td>
+            <td>${formatJST(email.sent_at)}</td>
+            <td>${formatJST(email.opened_at)}</td>
           `;
             tbody.appendChild(row);
           });
