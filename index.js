@@ -68,13 +68,10 @@ app.get("/track/:email_id", async (req, res) => {
   });
 
   // Send a transparent 1x1 pixel
-  res.set("Content-Type", "image/png");
-  res.send(
-    Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/5PqAAAAAElFTkSuQmCC",
-      "base64"
-    )
-  );
+  const base64Image =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/5PqAAAAAElFTkSuQmCC";
+  res.setHeader("Content-Type", "image/png"); 
+  res.send(Buffer.from(base64Image, "base64")); 
 });
 
 // Fetch emails with filters (people and date)
