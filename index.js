@@ -87,12 +87,8 @@ app.get("/dashboard", requireLogin, (req, res) => {
 // Track email open and notify clients
 app.get("/track/:email_id", async (req, res) => {
   const { email_id } = req.params;
-  let clientIp = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-  console.log(
-    "clientIp",
-    req.headers["x-forwarded-for"],
-    req.connection.remoteAddress
-  );
+  let clientIp = req.headers["x-forwarded-for"];
+  console.log("Client Ip", clientIp);
 
   // Update the email status to "Opened"
   await EmailLog.updateOne(
@@ -115,7 +111,7 @@ app.get("/track/:email_id", async (req, res) => {
 });
 
 // Fetch emails with filters (people and date)
-app.get("/emailList", async (req, res) => {
+app.get("/emails", async (req, res) => {
   const { people, days, status } = req.query;
 
   const filter = {};
@@ -154,16 +150,14 @@ app.get("/emailList", async (req, res) => {
 });
 
 // POST route to add a new email log
-app.get("/emails", async (req, res) => {
+app.post("/emails", async (req, res) => {
   try {
-    const { email_id, email, people } = req.query;
-    let clientIp =
-      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    console.log(
-      "clientIp",
-      req.headers["x-forwarded-for"],
-      req.connection.remoteAddress
-    );
+    const { email_id, email, people } = req.body;
+    let clientIp = req.connection.remoteAddress;
+    if (clientIp.startsWith("::ffff:")) {
+      clientIp = clientIp.substring(7);
+    }
+    console.log("Server Ip", clientIp);
 
     // Validate required fields
     if (!email_id || !email || !people) {

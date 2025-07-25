@@ -208,7 +208,7 @@
         const status = document.getElementById("status").value;
 
         const response = await fetch(
-          `/emailList?people=${people}&days=${days}&status=${status}`
+          `/emails?people=${people}&days=${days}&status=${status}`
         );
         const emails = await response.json();
 
