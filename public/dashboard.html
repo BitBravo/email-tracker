@@ -29,35 +29,58 @@
         margin: 0 auto;
         padding: 20px;
       }
-      /* Flexbox for filter controls */
+      /* Updated Filters Area */
       .filters {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 30px;
+        align-items: flex-end;
+      }
+      .filters label {
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        color: #4c5c68;
       }
       .filters select,
       .filters button {
-        padding: 10px;
+        padding: 10px 12px;
         border: 1px solid #ccc;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 1rem;
-        cursor: pointer;
+        background-color: white;
       }
       .filters button {
-        background-color: #4c5c68;
+        background-color: #33b1b8;
         color: white;
-        transition: background-color 0.3s;
+        border: none;
+        transition: all 0.3s ease;
       }
       .filters button:hover {
-        background-color: #2f3a45;
+        background-color: #23929a;
       }
 
-      /* Grouped Email List Styling */
+      /* Table Cell Status Styling */
+      td.status {
+        font-weight: bold;
+        color: #2c97de;
+        text-transform: capitalize;
+      }
+
+      /* Table Hover */
+      tr:hover td {
+        background-color: #eef2f7;
+        transition: 0.3s ease;
+      }
+
+      /* Group Titles */
       .group-title {
-        font-size: 1.4rem;
-        color: #4c5c68;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #333;
         margin-top: 40px;
-        font-weight: 600;
+        margin-bottom: 10px;
       }
 
       /* Card Style for the table */

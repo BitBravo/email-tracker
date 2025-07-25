@@ -6,6 +6,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const path = require("path");
 const mongoose = require("mongoose");
+const session = require("express-session");
 
 const app = express();
 const server = http.createServer(app);
@@ -32,10 +33,19 @@ const emailLogSchema = new mongoose.Schema({
 
 const EmailLog = mongoose.model("EmailLog", emailLogSchema);
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+// app.use(express.static(path.join(__dirname, "public")));
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
 
 // WebSocket connection to notify clients
 wss.on("connection", (ws) => {
@@ -45,9 +55,34 @@ wss.on("connection", (ws) => {
   });
 });
 
-// Track email open and notify clients
-app.get("/", async (req, res) => {
-  res, send("OK");
+const requireLogin = (req, res, next) => {
+  if (req.session.loggedIn) {
+    return next();
+  }
+  res.redirect("/");
+};
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// Handle login POST
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+
+  if (
+    username === process.env.AUTH_USER &&
+    password === process.env.AUTH_PASS
+  ) {
+    req.session.loggedIn = true;
+    return res.redirect("/dashboard");
+  }
+
+  res.send("Invalid credentials. <a href='/'>Try again</a>");
+});
+
+app.get("/dashboard", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
 
 // Track email open and notify clients
