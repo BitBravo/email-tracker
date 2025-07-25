@@ -25,6 +25,7 @@ const emailLogSchema = new mongoose.Schema({
   email_id: { type: String, required: true },
   email: { type: String, required: true },
   people: { type: String, required: true },
+  status: { type: String, required: false },
   opened_at: { type: Date, default: null },
   sent_at: { type: Date, required: true },
 });
@@ -122,6 +123,7 @@ app.post("/emails", async (req, res) => {
       email_id,
       email,
       people,
+      status: "Sent",
       opened_at: null,
       sent_at: new Date(),
     });
