@@ -88,7 +88,7 @@ app.get("/dashboard", requireLogin, (req, res) => {
 app.get("/track/:email_id", async (req, res) => {
   const { email_id } = req.params;
   let clientIp = req.headers["x-forwarded-for"];
-  console.log("Client Ip", clientIp);
+  // console.log("Client Ip", clientIp);
 
   // Update the email status to "Opened"
   await EmailLog.updateOne(
@@ -157,7 +157,7 @@ app.post("/emails", async (req, res) => {
     if (clientIp.startsWith("::ffff:")) {
       clientIp = clientIp.substring(7);
     }
-    console.log("Server Ip", clientIp);
+    // console.log("Server Ip", clientIp);
 
     // Validate required fields
     if (!email_id || !email || !people) {
